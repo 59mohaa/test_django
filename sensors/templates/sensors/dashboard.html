@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}- Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>Tableau de bord des capteurs</h1>
+        <hr>
+    </div>
+</div>
+
+<!-- Filtres par localisation -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text">Filtrer par emplacement</span>
+            <input type="text" id="locationFilter" class="form-control" placeholder="Saisir un emplacement...">
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text">Filtrer par type</span>
+            <select id="typeFilter" class="form-select">
+                <option value="">Tous les types</option>
+                <option value="temperature">Température</option>
+                <option value="humidity">Humidité</option>
+                <option value="pressure">Pression</option>
+                <option value="volume">Volume</option>
+                <option value="energy">Énergie</option>
+                <option value="status">Statut</option>
+                <option value="other">Autre</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Affichage des capteurs par carte -->
+<div class="row mt-4" id="sensorsContainer">
+    {% for sensor in sensors %}
+    <div class="col-md-4 mb-4 sensor-card" data-location="{{ sensor.location }}" data-type="{{ sensor.sensor_type }}">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ sensor.name }}</h5>
+                <span class="badge bg-primary">{{ sensor.get_sensor_type_display }}</span>
+            </div>
+            <div class="card-body">
+                <p><strong>ID:</strong> {{ sensor.sensor_id }}</p>
+                <p><strong>Emplacement:</strong> {{ sensor.location }}</p>
+                {% if sensor.data_points.exists %}
+                <p>
+                    <strong>Dernière valeur:</strong>
+                    <span class="badge bg-info">{{ sensor.data_points.first.value }} {{ sensor.unit }}</span>
+                    ({{ sensor.data_points.first.timestamp|date:"d/m/Y H:i" }})
+                </p>
+                {% else %}
+                <p><em>Aucune donnée disponible</em></p>
+                {% endif %}
+                <p>
+                    <strong>Scénarios:</strong>
+                    <span class="badge bg-secondary">{{ sensor.scenarios.count }}</span> actif(s)
+                </p>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'sensor_detail' sensor.id %}" class="btn btn-primary">Détails</a>
+                <button class="btn btn-outline-secondary btn-sm quick-graph" data-sensor-id="{{ sensor.id }}">
+                    <i class="bi bi-graph-up"></i> Graphique rapide
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            Aucun capteur n'est configuré. Veuillez <a href="{% url 'import_sensors' %}">importer des capteurs</a> ou en ajouter via l'interface d'administration.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal pour graphique rapide -->
+<div class="modal fade" id="quickGraphModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickGraphTitle">Graphique rapide</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="quickGraphCanvas" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Filtrage des capteurs
+    document.addEventListener('DOMContentLoaded', function() {
+        const locationFilter = document.getElementById('locationFilter');
+        const typeFilter = document.getElementById('typeFilter');
+        const sensorsContainer = document.getElementById('sensorsContainer');
+        const sensorCards = document.querySelectorAll('.sensor-card');
+       
+        // Fonction de filtrage
+        function filterSensors() {
+            const locationValue = locationFilter.value.toLowerCase();
+            const typeValue = typeFilter.value;
+           
+            sensorCards.forEach(card => {
+                const location = card.getAttribute('data-location').toLowerCase();
+                const type = card.getAttribute('data-type');
+               
+                const locationMatch = location.includes(locationValue);
+                const typeMatch = typeValue === '' || type === typeValue;
+               
+                if (locationMatch && typeMatch) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+       
+        // Écouteurs d'événements
+        locationFilter.addEventListener('input', filterSensors);
+        typeFilter.addEventListener('change', filterSensors);
+       
+        // Fonctionnalité du graphique rapide à implémenter plus tard
+        // Graphique rapide
+const quickGraphButtons = document.querySelectorAll('.quick-graph');
+const quickGraphModal = new bootstrap.Modal(document.getElementById('quickGraphModal'));
+const quickGraphTitle = document.getElementById('quickGraphTitle');
+const quickGraphCanvas = document.getElementById('quickGraphCanvas');
+let quickChart = null;
+
+quickGraphButtons.forEach(button => {
+    button.addEventListener('click', async function() {
+        const sensorId = this.getAttribute('data-sensor-id');
+        const sensorName = this.closest('.card').querySelector('.card-header h5').textContent;
+       
+        quickGraphTitle.textContent = `Graphique - ${sensorName}`;
+       
+        // Dans un cas réel, nous ferions une requête AJAX pour récupérer les données
+        // Pour l'instant, nous utilisons des données fictives
+        const labels = ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+        const data = [22.5, 22.8, 23.1, 22.9, 22.7, 22.6];
+       
+        if (quickChart) {
+            quickChart.destroy();
+        }
+       
+        quickChart = new Chart(quickGraphCanvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: sensorName,
+                    data: data,
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+       
+        quickGraphModal.show();
+    });
+});
+    });
+</script>
+
+{% endblock %}

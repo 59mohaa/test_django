@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}- Panneau d'administration{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>Panneau d'administration Exide Wattsense</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">Capteurs</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ sensors_count }}</h5>
+                <p class="card-text">capteurs enregistrés</p>
+                <a href="{% url 'import_sensors' %}" class="btn btn-light btn-sm">Importer des capteurs</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Points de données</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ data_points_count }}</h5>
+                <p class="card-text">mesures enregistrées</p>
+                <a href="{% url 'fetch_data' %}" class="btn btn-light btn-sm">Récupérer les données</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Scénarios</div>
+            <div class="card-body">
+                <h5 class="card-title">{{ scenarios_count }}</h5>
+                <p class="card-text">scénarios configurés</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Capteurs récents</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for sensor in recent_sensors %}
+                    <a href="{% url 'sensor_detail' sensor.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ sensor.name }}</h6>
+                            <small>{{ sensor.get_sensor_type_display }}</small>
+                        </div>
+                        <small>{{ sensor.location }}</small>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item">Aucun capteur enregistré</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Dernières mesures</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Capteur</th>
+                                <th>Valeur</th>
+                                <th>Horodatage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in recent_data %}
+                            <tr>
+                                <td>{{ data.sensor.name }}</td>
+                                <td>{{ data.value }} {{ data.sensor.unit }}</td>
+                                <td>{{ data.timestamp|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">Aucune donnée disponible</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Actions rapides</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'fetch_data' %}" class="btn btn-primary">Récupérer les données</a>
+                    <a href="{% url 'import_sensors' %}" class="btn btn-success">Importer des capteurs</a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-info">Tableau de bord</a>
+                    <a href="/admin/" class="btn btn-secondary">Administration Django</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

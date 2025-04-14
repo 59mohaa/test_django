@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}- {{ sensor.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1>{{ sensor.name }}</h1>
+        <div class="badge bg-primary mb-2">{{ sensor.get_sensor_type_display }}</div>
+        <p>
+            <strong>ID:</strong> {{ sensor.sensor_id }}<br>
+            <strong>Emplacement:</strong> {{ sensor.location }}<br>
+            <strong>Unité:</strong> {{ sensor.unit }}<br>
+            <strong>Description:</strong> {{ sensor.description }}
+        </p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Retour</a>
+        <a href="{% url 'scenario_create' sensor.id %}" class="btn btn-success">Créer un scénario</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Données sur les dernières 24 heures</h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="last24h">24h</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="last7d">7j</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="last30d">30j</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="custom">Personnalisé</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <canvas id="sensorChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Scénarios configurés</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Condition</th>
+                            <th>Action</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scenario in scenarios %}
+                        <tr>
+                            <td>{{ scenario.name }}</td>
+                            <td>{{ scenario.get_condition_operator_display }} {{ scenario.condition_value }} {{ sensor.unit }}</td>
+                            <td>{{ scenario.get_action_type_display }}</td>
+                            <td>
+                                {% if scenario.is_active %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'scenario_update' scenario.id %}" class="btn btn-sm btn-primary">Modifier</a>
+                                <button class="btn btn-sm btn-danger delete-scenario" data-scenario-id="{{ scenario.id }}">Supprimer</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Aucun scénario configuré pour ce capteur.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau des données récentes -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Dernières valeurs enregistrées</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date et heure</th>
+                                <th>Valeur</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for point in data_points %}
+                            <tr>
+                                <td>{{ point.timestamp|date:"d/m/Y H:i:s" }}</td>
+                                <td>{{ point.value }} {{ sensor.unit }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="text-center">Aucune donnée disponible</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        let sensorChart = null;
+       
+        // Fonction pour charger les données du capteur
+        async function loadSensorData(period = '24h', customStart = null, customEnd = null) {
+            try {
+                // Construire l'URL avec les paramètres
+                let url = `{% url 'api_sensor_data' sensor.id %}?period=${period}`;
+                if (customStart) url += `&start=${customStart}`;
+                if (customEnd) url += `&end=${customEnd}`;
+               
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                const data = await response.json();
+               
+                // Extraire les labels (timestamps) et les valeurs
+                const labels = data.map(point => {
+                    // Formater l'heure pour affichage
+                    const date = new Date(point.timestamp);
+                    return date.toLocaleString();
+                });
+               
+                const values = data.map(point => point.value);
+               
+                // Détruire le graphique existant s'il y en a un
+                if (sensorChart) {
+                    sensorChart.destroy();
+                }
+               
+                // Créer un nouveau graphique
+                sensorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '{{ sensor.name }} ({{ sensor.unit }})',
+                            data: values,
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Évolution des valeurs'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: '{{ sensor.unit }}'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Temps'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+                alert(`Erreur lors du chargement des données: ${error.message}`);
+            }
+        }
+       
+        // Charger les données initiales (24h)
+        loadSensorData();
+       
+        // Gérer les boutons de période
+        document.querySelectorAll('#last24h, #last7d, #last30d, #custom').forEach(button => {
+            button.addEventListener('click', function() {
+                // Mettre tous les boutons en état normal
+                document.querySelectorAll('#last24h, #last7d, #last30d, #custom').forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                });
+               
+                // Mettre ce bouton en état actif
+                this.classList.remove('btn-outline-primary');
+                this.classList.add('btn-primary');
+               
+                if (this.id === 'custom') {
+                    // Pour la période personnalisée, demander les dates
+                    const startDate = prompt('Date de début (YYYY-MM-DD):', '2025-04-01');
+                    const endDate = prompt('Date de fin (YYYY-MM-DD):', '2025-04-10');
+                    if (startDate && endDate) {
+                        loadSensorData('custom', startDate, endDate);
+                    }
+                } else {
+                    // Pour les périodes prédéfinies
+                    loadSensorData(this.id);
+                }
+            });
+        });
+       
+        // Gestion des boutons de suppression de scénario
+document.querySelectorAll('.delete-scenario').forEach(button => {
+    button.addEventListener('click', function() {
+        const scenarioId = this.getAttribute('data-scenario-id');
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce scénario ?')) {
+            window.location.href = `{% url 'scenario_delete' 0 %}`.replace('0', scenarioId);
+        }
+    });
+});
+    });
+</script>
+{% endblock %}

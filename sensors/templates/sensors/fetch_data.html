@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}- Récupérer les données{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Récupérer les données des capteurs</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Retour</a>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body">
+                <p class="alert alert-info">
+                    Cette action va interroger l'API Wattsense pour récupérer les données récentes de tous les capteurs et les stocker dans la base de données.
+                </p>
+               
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Récupérer les données</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

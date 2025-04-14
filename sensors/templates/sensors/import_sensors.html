@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}- Importer des capteurs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Importer des capteurs depuis Wattsense</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Retour</a>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body">
+                <p class="alert alert-info">
+                    Cette action va interroger l'API Wattsense pour récupérer tous les capteurs disponibles et les ajouter à votre base de données.
+                </p>
+               
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Lancer l'importation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}- {% if form.instance.id %}Modifier{% else %}Créer{% endif %} Scénario{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>{% if form.instance.id %}Modifier{% else %}Créer{% endif %} un scénario pour {{ sensor.name }}</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'sensor_detail' sensor.id %}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                   
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">Nom du scénario</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                   
+                    <div class="mb-3">
+                        <label for="{{ form.condition_operator.id_for_label }}" class="form-label">Opérateur de condition</label>
+                        {{ form.condition_operator }}
+                        {% if form.condition_operator.errors %}
+                        <div class="text-danger">{{ form.condition_operator.errors }}</div>
+                        {% endif %}
+                    </div>
+                   
+                    <div class="mb-3">
+                        <label for="{{ form.condition_value.id_for_label }}" class="form-label">Valeur de seuil ({{ sensor.unit }})</label>
+                        {{ form.condition_value }}
+                        {% if form.condition_value.errors %}
+                        <div class="text-danger">{{ form.condition_value.errors }}</div>
+                        {% endif %}
+                    </div>
+                   
+                    <div class="mb-3">
+                        <label for="{{ form.action_type.id_for_label }}" class="form-label">Type d'action</label>
+                        {{ form.action_type }}
+                        {% if form.action_type.errors %}
+                        <div class="text-danger">{{ form.action_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                   
+                    <div class="mb-3">
+                        <label for="{{ form.action_details.id_for_label }}" class="form-label">Détails de l'action</label>
+                        <small class="form-text text-muted d-block mb-2">
+                            Pour les notifications par email, entrez l'adresse email. Pour les appels API, entrez l'URL complète.
+                        </small>
+                        {{ form.action_details }}
+                        {% if form.action_details.errors %}
+                        <div class="text-danger">{{ form.action_details.errors }}</div>
+                        {% endif %}
+                    </div>
+                   
+                    <div class="mb-3 form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Actif</label>
+                    </div>
+                   
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

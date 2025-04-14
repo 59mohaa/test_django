@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}- Supprimer Scénario{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h1>Supprimer le scénario</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'sensor_detail' scenario.sensor.id %}" class="btn btn-secondary">Annuler</a>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-body">
+                <p class="alert alert-danger">
+                    Êtes-vous sûr de vouloir supprimer le scénario "{{ scenario.name }}" ? Cette action est irréversible.
+                </p>
+               
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
